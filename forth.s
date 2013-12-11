@@ -19,7 +19,10 @@ jmp 0x0:start
 ; lodsw loads SI into AX and increases SI
 %macro NEXT 0
 	lodsw
-	jmp [eax] ;using EAX here, because 'jmp [ax]' is not valid.
+	mov bx, ax
+	jmp [bx] ;using BX because 'jmp [ax]' is not valid.
+	;alternativly the code below should work too, although i don't know how it will respond to segments
+	;jmp [eax] ;using EAX here, because 'jmp [ax]' is not valid.
 %endmacro
 
 ; inner interpreter
