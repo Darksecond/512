@@ -19,18 +19,21 @@ jmp 0x0:start
 ; lodsw loads SI into AX and increases SI
 %macro NEXT 0
 	lodsw
-	mov bx, ax
-	jmp [bx] ;using BX because 'jmp [ax]' is not valid.
-	;alternativly the code below should work too, although i don't know how it will respond to segments
-	;jmp [eax] ;using EAX here, because 'jmp [ax]' is not valid.
+	; Because 'jmp [ax]' does not exist, we need to move it (the CFA) into another register
+	;TODO use xchg?
+	mov di, ax
+	jmp word [di] ;using DI because 'jmp [ax]' is not valid.
 %endmacro
 
 ; inner interpreter
 ; ax contains codeword because of previous NEXT
 DOCOL:
 pushr si   ; save current si on return stack
-add ax, 4  ; ax points to codeword
-mov si, ax ; make si point to first data word
+;add ax, 2  ; ax points to codeword
+;mov si, ax ; make si point to first data word
+; load start of word parameter-list into si
+; does the same as the code above, basically
+lea si, [di+2]
 NEXT
 
 start:
