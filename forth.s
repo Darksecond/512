@@ -38,8 +38,6 @@ cli
 xor ax, ax
 mov ds, ax
 mov es, ax
-mov fs, ax
-mov gs, ax
 mov ss, ax
 sti
 ; early set up is done, work starts here
