@@ -19,7 +19,7 @@ jmp 0x0:start
 ; lodsw loads SI into AX and increases SI
 %macro NEXT 0
 	lodsw
-	jmp [eax]
+	jmp [eax] ;using EAX here, because 'jmp [ax]' is not valid.
 %endmacro
 
 ; inner interpreter
