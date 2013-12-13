@@ -1,80 +1,71 @@
+; Forth in 512 bytes.
+; This code is designed to be placed as the bootsector (MBR) of a disk. It does not need any other kind of operating system running.
+; It runs in real mode and is fully 16-bit.
+; Because it needs to fit in 512 bytes, not all standard FORTH words might be available.
+; 
+; Overview of memory layout
+; -------------------------
+;
+; FORTH requires a number of memory sections to exist, which include:
+; Parameter stack,
+; Return stack,
+; PAD,
+; Text Input Buffer,
+; HEAP
+; Code
+; 
+; Memory is laid out as follows:
+; 
+; |-----|---------|------------|------|----------|------------|
+; | TIB | PAD --> | <-- RSTACK | CODE | HEAP --> | <-- PSTACK |
+; |-----|---------|------------|------|----------|------------|
+; 
+; TIB needs to be a mininum of 80 characters, it will start right after the BIOS, starting at 0x500.
+; PAD starts right after the TIB and grows upwards.
+; RSTACK starts from 0x7C00 downwards.
+; CODE start from 0x7C00 upwards, for 512 bytes.
+; HEAP starts after the code upwards
+; PSTACK starts from 0x0000 downwards
+; 
+; Register allocations
+; --------------------
+;
+; AX General purpose
+; BX General purpose
+; CX General purpose
+; DX General purpose
+; SI Forth instruction Pointer
+; DI Pointer to current CFA of word currently being executed
+; SP Parameter stack pointer
+; BP Return stack pointer
+; Segments are all set to zero by default.
+
+; Jump to Start to set CS.
 ORG 0x7C00
+jmp 0x0:Start
 
-jmp 0x0:start
-
-; push onto return stack
-%macro pushr 1
-	xchg sp, bp
-	push %1
-	xchg sp, bp
-%endmacro
-
-; pop from return stack
-%macro popr 1
-	xchg sp, bp
-	pop %1
-	xchg sp, bp
-%endmacro
-
-; lodsw loads SI into AX and increases SI
-%macro NEXT 0
-	lodsw
-	; Because 'jmp [ax]' does not exist, we need to move it (the CFA) into another register
-	;TODO use xchg?
-	mov di, ax
-	jmp word [di] ;using DI because 'jmp [ax]' is not valid.
-%endmacro
-
-; inner interpreter
-; ax contains codeword because of previous NEXT
-DOCOL:
-pushr si   ; save current si on return stack
-;add ax, 2  ; ax points to codeword
-;mov si, ax ; make si point to first data word
-; load start of word parameter-list into si
-; does the same as the code above, basically
-lea si, [di+2]
-NEXT
-
-start:
+; Initialization of segments and registers.
+; Afterwards we jump straight into FORTH.
+Start:
+; Initialize segments
 cli
 xor ax, ax
 mov ds, ax
 mov es, ax
 mov ss, ax
 sti
-; early set up is done, work starts here
+; Initialize parameter and return stack
+mov sp, 0x0000
+mov bp, 0x7C00
 
-; parameter stack starts at 0x7C00
-; return stack starts at 0x0000 (rolls over to top of segment)
-mov sp, 0x7C00
-mov bp, 0x0000
+; This is here temporarily.
+; We should, and will, move this to it's own word.
+.halt:
+hlt
+jmp .halt
 
-mov si, cold_start
-NEXT
-
-cold_start:
-	dw TEST ;TODO replace with 'QUIT'
-
-;TEST forth 'word'
-;hangs as part of it, so it's really really 'broken', but it works as a test-thing
-TEST:
-	dw CODE_TEST
-CODE_TEST:
-mov si, msg
-ch_loop:
-lodsb      ; copy from SI into AL
-or al, al  ; zero=end of string
-jz hang    ; get out
-mov ah, 0x0E ;Write Character in TTY Mode
-int 0x10 ;Video Services
-jmp ch_loop
-
-msg   db 'Welcome to Macintosh', 13, 10, 0
-
-hang:
-jmp hang
-
+; This is required to fill up the file to 512 bytes.
+; The last two bytes are an identifier to mark the disk as bootable.
 times 510-($-$$) db 0
 db 0x55
 db 0xAA
