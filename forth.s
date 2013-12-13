@@ -49,9 +49,9 @@
 ; Parameter list - Unknown bytes
 
 ;TODO Macro's (pushr, popr, colon, variable, constant)
-; Various macro's
+; Various macros
 ; 
-; Various variables required by macro's.
+; Various variables required by macros.
 ; Link, this is the 'top' of the linked list of WORDs.
 %define link 0
 
@@ -113,7 +113,7 @@ mov sp, 0x0000
 mov bp, 0x7C00
 ; 
 ; Start of the forth system.
-; Temporarily we start with the 'halt' word.
+;TODO remove this, as it's 'fake' data.
 push 'C'
 push 'B'
 push 'A'
@@ -124,6 +124,7 @@ next
 
 ; Cold start 'word'
 ;TODO we might wanna refactor this a bit
+;TODO don't call emit,halt, use a real forth word!
 cold_start:
 dw xt_emit
 dw xt_emit
