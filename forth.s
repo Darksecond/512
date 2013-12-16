@@ -20,7 +20,7 @@
 ; | TIB | PAD --> | <-- RSTACK | CODE | HEAP --> | <-- PSTACK |
 ; |-----|---------|------------|------|----------|------------|
 ; 
-; TIB needs to be a mininum of 80 characters, it will start right after the BIOS, starting at 0x500.
+; TIB needs to be a mininum of 80 characters, it will start right after the BIOS, starting at 0x504.
 ; PAD starts right after the TIB and grows upwards.
 ; RSTACK starts from 0x7C00 downwards.
 ; CODE start from 0x7C00 upwards, for 512 bytes.
@@ -81,6 +81,22 @@ xt_ %+ %2 dw %4
 %macro primitive 2-3 0
 ; Call head, %3 will be 0 if not supplied. $+2 is the next statement, meaning it's the start of the actual code.
 head %1,%2,%3,$+2
+%endmacro
+
+; Variable macro
+; variable <name>, <label>, <default value>
+%macro variable 3
+head %1, %2, 0, dovar
+; create a word named val_<label> with <default value>.
+val_ %+ %2 dw %3
+%endmacro
+
+; Constant macro
+; constant <name>, <label>, <default value>
+%macro constant 3
+head %1, %2, 0, doconst
+; create a word named val_<label> with <default value>.
+val_ %+ %2 dw %3
 %endmacro
 
 ; Next macro
@@ -145,6 +161,22 @@ pop ax
 mov ah, 0x0E ;Write Character in TTY Mode
 int 0x10 ;Video Services
 next
+
+; support for variable
+dovar:
+lea bx, [di+2]
+push bx
+next
+
+; support for constant
+doconst:
+mov bx, [di+2]
+push bx
+next
+
+variable '#TIB', number_tib, 0
+variable '>IN', to_in, 0
+constant 'TIB', tib, 0x504
 
 ; This is required to fill up the file to 512 bytes.
 ; The last two bytes are an identifier to mark the disk as bootable.
